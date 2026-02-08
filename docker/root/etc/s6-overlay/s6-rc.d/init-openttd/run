@@ -1,0 +1,66 @@
+#!/usr/bin/with-contenv bash
+# shellcheck shell=bash
+
+# Build OpenTTD command-line parameters based on environment
+
+params="-D"
+
+params="${params} -c ${configpath}/${configfile}"
+
+# Env vars (defaults set in Dockerfile): loadgame, savepath, configpath, configfile, savename, debug
+# - savepath: saves directory (default /config/save); autosave lives in savepath/autosave
+
+case "${loadgame:-false}" in
+  false)
+    echo "loadgame = false -> starting new game"
+    ;;
+
+  true)
+    if [ -n "${savename:-}" ]; then
+      savegame="${savepath}/${savename}"
+      echo "using savegame (explicit): ${savegame}"
+      params="${params} -g ${savegame}"
+    else
+      echo "loadgame=true but no savename provided; starting new game"
+    fi
+    ;;
+
+  last-autosave)
+    if [ -d "${savepath}/autosave" ]; then
+      last_autosave="$(ls -rt "${savepath}/autosave" | tail -n1 || true)"
+      if [ -n "${last_autosave}" ]; then
+        savegame="${savepath}/autosave/${last_autosave}"
+        echo "using savegame (last autosave): ${savegame}"
+        params="${params} -g ${savegame}"
+      else
+        echo "no autosaves found; starting new game"
+      fi
+    else
+      echo "autosave directory not found; starting new game"
+    fi
+    ;;
+
+  exit)
+    savegame="${savepath}/autosave/exit.sav"
+    echo "using savegame (exit): ${savegame}"
+    params="${params} -g ${savegame}"
+    ;;
+
+  *)
+    echo "unknown loadgame mode '${loadgame}', starting new game"
+    ;;
+esac
+
+# Additional optional flags from Dockerfile env
+
+
+
+if [ -n "${debug:-}" ]; then
+  params="${params} -d ${debug}"
+fi
+
+echo "setting the following params for the game:"
+echo "${params}"
+
+# Export params into s6 environment for the service script
+printf %s "${params}" > /var/run/s6/container_environment/OPENTTD_PARAMS

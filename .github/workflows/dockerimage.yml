@@ -1,0 +1,47 @@
+name: Build and Publish Docker Image
+
+on:
+  push:
+    tags:
+      - '*'  # Triggers when any new tag is pushed
+  workflow_dispatch:  # Allows manual trigger
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Parse version and major
+        id: version
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          # Strip leading 'v' if present (e.g. v15.1.0 -> 15.1.0)
+          VERSION="${TAG}"
+          # Major = first segment (e.g. 15.1.0 -> 15)
+          MAJOR="${VERSION%%.*}"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "major=$MAJOR" >> $GITHUB_OUTPUT
+          echo "Pushing tags: latest, $MAJOR, $VERSION"
+
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/dockerfile
+          push: true
+          tags: |
+            burrowops/openttd:latest
+            burrowops/openttd:${{ steps.version.outputs.major }}
+            burrowops/openttd:${{ steps.version.outputs.version }}

@@ -1,0 +1,61 @@
+## docker buildx build . -t openttdv2
+
+# ---- Builder: download and unpack OpenTTD + OpenGFX ----
+FROM docker.io/library/alpine:3.20 AS builder
+
+# renovate: datasource=github-releases depName=OpenTTD/OpenTTD
+ARG OPENTTD_VERSION="14.0"
+# renovate: datasource=github-releases depName=OpenTTD/OpenGFX
+ARG OPENGFX_VERSION="7.0"
+
+RUN apk add --no-cache ca-certificates curl unzip xz
+
+RUN mkdir -p /out/openttd /out/openttd/baseset
+RUN echo "**** download and unpack openttd ****"
+RUN curl -fsSL "https://cdn.openttd.org/openttd-releases/${OPENTTD_VERSION}/openttd-${OPENTTD_VERSION}-linux-generic-amd64.tar.xz" -o /tmp/openttd.tar.xz 
+RUN tar xf /tmp/openttd.tar.xz -C /out/openttd --strip-components=1
+
+RUN mkdir -p /out/openttd/baseset
+RUN echo "**** download and unpack opengfx ****" 
+RUN curl -fsSL "https://cdn.openttd.org/opengfx-releases/${OPENGFX_VERSION}/opengfx-${OPENGFX_VERSION}-all.zip" -o /tmp/opengfx.zip
+RUN unzip -q -o /tmp/opengfx.zip -d /tmp/opengfx
+RUN tar xf /tmp/opengfx/opengfx-*.tar -C /out/openttd/baseset --strip-components=1
+
+# ---- Final image (linuxserver base with s6-overlay) ----
+FROM ghcr.io/linuxserver/baseimage-ubuntu:jammy
+
+LABEL maintainer="BurrowOps"
+
+# Defaults for s6 init script (override with -e)
+ENV loadgame="last-autosave" \
+    debug="0" \
+    savepath="/config/save" \
+    configpath="/config" \
+    configfile="openttd.cfg"
+
+RUN echo "**** install runtime dependencies ****" && \
+  apt-get update && \
+  apt-get install -y --no-install-recommends \
+    libfontconfig1 \
+    libfreetype6 \
+    libfluidsynth3 \
+    libicu-dev \
+    libpng16-16 \
+    liblzma-dev \
+    liblzo2-2 \
+    libsdl1.2debian \
+    libsdl2-2.0-0 && \
+  apt-get clean && \
+  rm -rf /var/lib/apt/lists/* /var/tmp/*
+
+COPY --from=builder /out/openttd /usr/games/openttd
+
+#  add local files
+COPY root/ /
+
+# ports and volumes
+EXPOSE 3978/udp
+EXPOSE 3979 
+EXPOSE 3979/udp 
+
+VOLUME /config

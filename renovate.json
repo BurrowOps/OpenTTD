@@ -1,0 +1,15 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "Renovate config for OpenTTD Docker image",
+  "schedule": ["before 1am every day"],
+  "timezone": "Europe/Amsterdam",
+  "labels": ["dependencies"],
+  "packageRules": [
+    {
+      "description": "Group OpenTTD and OpenGFX version bumps",
+      "matchDatasources": ["github-releases"],
+      "matchPackageNames": ["OpenTTD/OpenTTD", "OpenTTD/OpenGFX"],
+      "groupName": "openttd and opengfx"
+    }
+  ]
+}

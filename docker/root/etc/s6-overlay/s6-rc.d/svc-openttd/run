@@ -1,0 +1,9 @@
+#!/usr/bin/with-contenv bash
+# shellcheck shell=bash
+
+echo "Starting OpenTTD dedicated server"
+
+# OPENTTD_PARAMS is set by init-openttd/run via s6 container_environment
+echo "Using params: ${OPENTTD_PARAMS}"
+
+exec /usr/games/openttd/openttd ${OPENTTD_PARAMS}
