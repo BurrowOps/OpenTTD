@@ -1,0 +1,24 @@
+services:
+  openttd:
+    container_name: openttd
+    image: burrowops/openttd:latest
+    restart: unless-stopped
+    stop_grace_period: 30s
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Amsterdam
+      - loadgame=last-autosave
+      # - savename=game.sav
+      # - savepath=/config/save
+      # - configpath=/config
+      # - configfile=openttd.cfg
+      # - debug=0
+      # - UMASK=022
+    volumes:
+      - ./openttd:/config
+    ports:
+      - 3979:3979/tcp
+      - 3979:3979/udp
+      # Optional: remote admin port (server_admin_port in openttd.cfg)
+      # - 3977:3977/tcp

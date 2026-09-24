@@ -4,13 +4,20 @@
 # Build OpenTTD command-line parameters based on environment
 
 params="-D"
-
 params="${params} -c ${configpath}/${configfile}"
 
 # Env vars (defaults set in Dockerfile): loadgame, savepath, configpath, configfile, savename, debug
 # - savepath: saves directory (default /config/save); autosave lives in savepath/autosave
 
-case "${loadgame:-false}" in
+mkdir -p "${savepath}/autosave"
+
+# OpenTTD writes saves under $HOME/.openttd/save; keep that pointed at savepath
+mkdir -p "${HOME}/.openttd"
+if [ ! -e "${HOME}/.openttd/save" ]; then
+  ln -s "${savepath}" "${HOME}/.openttd/save"
+fi
+
+case "${loadgame:-last-autosave}" in
   false)
     echo "loadgame = false -> starting new game"
     ;;
@@ -26,34 +33,19 @@ case "${loadgame:-false}" in
     ;;
 
   last-autosave)
-    if [ -d "${savepath}/autosave" ]; then
-      last_autosave="$(ls -rt "${savepath}/autosave" | tail -n1 || true)"
-      if [ -n "${last_autosave}" ]; then
-        savegame="${savepath}/autosave/${last_autosave}"
-        echo "using savegame (last autosave): ${savegame}"
-        params="${params} -g ${savegame}"
-      else
-        echo "no autosaves found; starting new game"
-      fi
+    last_autosave="$(ls -1t "${savepath}/autosave"/*.sav 2>/dev/null | head -n1 || true)"
+    if [ -n "${last_autosave}" ]; then
+      echo "using savegame (last autosave): ${last_autosave}"
+      params="${params} -g ${last_autosave}"
     else
-      echo "autosave directory not found; starting new game"
+      echo "no autosaves found; starting new game"
     fi
-    ;;
-
-  exit)
-    savegame="${savepath}/autosave/exit.sav"
-    echo "using savegame (exit): ${savegame}"
-    params="${params} -g ${savegame}"
     ;;
 
   *)
     echo "unknown loadgame mode '${loadgame}', starting new game"
     ;;
 esac
-
-# Additional optional flags from Dockerfile env
-
-
 
 if [ -n "${debug:-}" ]; then
   params="${params} -d ${debug}"

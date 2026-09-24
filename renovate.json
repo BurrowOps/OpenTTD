@@ -1,15 +1,43 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "description": "Renovate config for OpenTTD Docker image",
-  "schedule": ["before 1am every day"],
+  "extends": ["config:recommended"],
+  "description": "Bump OpenTTD, OpenGFX, linuxserver Ubuntu, and GitHub Actions",
+  "schedule": ["before 6am"],
   "timezone": "Europe/Amsterdam",
   "labels": ["dependencies"],
+  "automerge": true,
+  "platformAutomerge": true,
+  "customManagers": [
+    {
+      "customType": "regex",
+      "fileMatch": ["(^|/)dockerfile$"],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)(?: versioning=(?<versioning>\\S+))?\\s+ARG \\w+=\"(?<currentValue>[^\"]+)\""
+      ]
+    }
+  ],
   "packageRules": [
     {
-      "description": "Group OpenTTD and OpenGFX version bumps",
-      "matchDatasources": ["github-releases"],
-      "matchPackageNames": ["OpenTTD/OpenTTD", "OpenTTD/OpenGFX"],
-      "groupName": "openttd and opengfx"
+      "description": "Alpine is builder-only; stay on latest and ignore updates",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["alpine", "docker.io/library/alpine"],
+      "enabled": false
+    },
+    {
+      "description": "Keep linuxserver Ubuntu on LTS codenames only",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["ghcr.io/linuxserver/baseimage-ubuntu"],
+      "allowedVersions": "/^(jammy|noble)$/"
+    },
+    {
+      "description": "Group container dependency bumps into one PR",
+      "matchDatasources": ["github-releases", "docker"],
+      "matchPackageNames": [
+        "OpenTTD/OpenTTD",
+        "OpenTTD/OpenGFX",
+        "ghcr.io/linuxserver/baseimage-ubuntu"
+      ],
+      "groupName": "openttd container dependencies"
     }
   ]
 }

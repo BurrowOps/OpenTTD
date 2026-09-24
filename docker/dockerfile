@@ -1,33 +1,44 @@
-## docker buildx build . -t openttdv2
+# Build from this directory:
+#   docker buildx build . -t burrowops/openttd:latest
+
+# renovate: datasource=docker depName=ghcr.io/linuxserver/baseimage-ubuntu versioning=loose
+ARG LSIO_VERSION="noble"
+# renovate: datasource=github-releases depName=OpenTTD/OpenTTD
+ARG OPENTTD_VERSION="15.3"
+# renovate: datasource=github-releases depName=OpenTTD/OpenGFX
+ARG OPENGFX_VERSION="8.0"
 
 # ---- Builder: download and unpack OpenTTD + OpenGFX ----
-FROM docker.io/library/alpine:3.20 AS builder
+FROM docker.io/library/alpine:latest AS builder
 
-# renovate: datasource=github-releases depName=OpenTTD/OpenTTD
-ARG OPENTTD_VERSION="14.0"
-# renovate: datasource=github-releases depName=OpenTTD/OpenGFX
-ARG OPENGFX_VERSION="7.0"
+ARG OPENTTD_VERSION
+ARG OPENGFX_VERSION
 
-RUN apk add --no-cache ca-certificates curl unzip xz
-
-RUN mkdir -p /out/openttd /out/openttd/baseset
-RUN echo "**** download and unpack openttd ****"
-RUN curl -fsSL "https://cdn.openttd.org/openttd-releases/${OPENTTD_VERSION}/openttd-${OPENTTD_VERSION}-linux-generic-amd64.tar.xz" -o /tmp/openttd.tar.xz 
-RUN tar xf /tmp/openttd.tar.xz -C /out/openttd --strip-components=1
-
-RUN mkdir -p /out/openttd/baseset
-RUN echo "**** download and unpack opengfx ****" 
-RUN curl -fsSL "https://cdn.openttd.org/opengfx-releases/${OPENGFX_VERSION}/opengfx-${OPENGFX_VERSION}-all.zip" -o /tmp/opengfx.zip
-RUN unzip -q -o /tmp/opengfx.zip -d /tmp/opengfx
-RUN tar xf /tmp/opengfx/opengfx-*.tar -C /out/openttd/baseset --strip-components=1
+RUN apk add --no-cache ca-certificates curl unzip xz \
+    && mkdir -p /out/openttd/baseset \
+    && echo "**** download and unpack openttd ****" \
+    && curl -fsSL "https://cdn.openttd.org/openttd-releases/${OPENTTD_VERSION}/openttd-${OPENTTD_VERSION}-linux-generic-amd64.tar.xz" -o /tmp/openttd.tar.xz \
+    && tar xf /tmp/openttd.tar.xz -C /out/openttd --strip-components=1 \
+    && echo "**** download and unpack opengfx ****" \
+    && curl -fsSL "https://cdn.openttd.org/opengfx-releases/${OPENGFX_VERSION}/opengfx-${OPENGFX_VERSION}-all.zip" -o /tmp/opengfx.zip \
+    && unzip -q -o /tmp/opengfx.zip -d /tmp/opengfx \
+    && tar xf /tmp/opengfx/opengfx-*.tar -C /out/openttd/baseset --strip-components=1
 
 # ---- Final image (linuxserver base with s6-overlay) ----
-FROM ghcr.io/linuxserver/baseimage-ubuntu:jammy
+FROM ghcr.io/linuxserver/baseimage-ubuntu:${LSIO_VERSION}
 
-LABEL maintainer="BurrowOps"
+ARG OPENTTD_VERSION
+
+LABEL maintainer="BurrowOps" \
+      org.opencontainers.image.title="openttd" \
+      org.opencontainers.image.description="OpenTTD dedicated server" \
+      org.opencontainers.image.source="https://github.com/BurrowOps/OpenTTD" \
+      org.opencontainers.image.vendor="BurrowOps" \
+      org.opencontainers.image.version="${OPENTTD_VERSION}"
 
 # Defaults for s6 init script (override with -e)
-ENV loadgame="last-autosave" \
+ENV HOME="/config" \
+    loadgame="last-autosave" \
     debug="0" \
     savepath="/config/save" \
     configpath="/config" \
@@ -39,23 +50,25 @@ RUN echo "**** install runtime dependencies ****" && \
     libfontconfig1 \
     libfreetype6 \
     libfluidsynth3 \
-    libicu-dev \
+    libicu74 \
     libpng16-16 \
-    liblzma-dev \
+    liblzma5 \
     liblzo2-2 \
-    libsdl1.2debian \
     libsdl2-2.0-0 && \
   apt-get clean && \
   rm -rf /var/lib/apt/lists/* /var/tmp/*
 
 COPY --from=builder /out/openttd /usr/games/openttd
 
-#  add local files
+# Add s6 overlay services
 COPY root/ /
+RUN chmod +x /etc/s6-overlay/s6-rc.d/init-openttd/run \
+             /etc/s6-overlay/s6-rc.d/svc-openttd/run
 
-# ports and volumes
-EXPOSE 3978/udp
-EXPOSE 3979 
-EXPOSE 3979/udp 
+EXPOSE 3979/tcp
+EXPOSE 3979/udp
 
 VOLUME /config
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
+  CMD bash -c 'echo > /dev/tcp/127.0.0.1/3979' || exit 1

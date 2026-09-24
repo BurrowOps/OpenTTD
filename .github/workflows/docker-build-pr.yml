@@ -1,0 +1,26 @@
+name: Verify Docker image
+
+on:
+  pull_request:
+    paths:
+      - "docker/**"
+      - ".github/workflows/docker-build-pr.yml"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build image
+        uses: docker/build-push-action@v6
+        with:
+          context: docker
+          file: docker/dockerfile
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
