@@ -1,7 +1,7 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:recommended"],
-  "description": "Bump OpenTTD, OpenGFX, linuxserver Ubuntu, and GitHub Actions",
+  "description": "Bump OpenTTD, OpenGFX, the linuxserver Ubuntu digest, and GitHub Actions",
   "schedule": ["before 6am"],
   "timezone": "Europe/Amsterdam",
   "labels": ["dependencies"],
@@ -24,10 +24,12 @@
       "enabled": false
     },
     {
-      "description": "Keep linuxserver Ubuntu on LTS codenames only",
+      "description": "Stay on Ubuntu LTS codenames, and pin the floating tag so remote linuxserver rebuilds show up as digest bumps",
+      "matchManagers": ["dockerfile"],
       "matchDatasources": ["docker"],
       "matchPackageNames": ["ghcr.io/linuxserver/baseimage-ubuntu"],
-      "allowedVersions": "/^(jammy|noble)$/"
+      "allowedVersions": "/^(jammy|noble)$/",
+      "pinDigests": true
     },
     {
       "description": "Group container dependency bumps into one PR",

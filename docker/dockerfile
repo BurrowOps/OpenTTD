@@ -1,7 +1,7 @@
 # Build from this directory:
 #   docker buildx build . -t burrowops/openttd:latest
 
-# renovate: datasource=docker depName=ghcr.io/linuxserver/baseimage-ubuntu versioning=loose
+# noble is a floating tag. The digest changes when linuxserver republishes it.
 ARG LSIO_VERSION="noble"
 # renovate: datasource=github-releases depName=OpenTTD/OpenTTD
 ARG OPENTTD_VERSION="15.3"
@@ -25,7 +25,7 @@ RUN apk add --no-cache ca-certificates curl unzip xz \
     && tar xf /tmp/opengfx/opengfx-*.tar -C /out/openttd/baseset --strip-components=1
 
 # ---- Final image (linuxserver base with s6-overlay) ----
-FROM ghcr.io/linuxserver/baseimage-ubuntu:${LSIO_VERSION}
+FROM ghcr.io/linuxserver/baseimage-ubuntu:${LSIO_VERSION}@sha256:3f3f186526ab9d1619234f30221e80ceb9ec37139d64d77afb42350cf8fb9732
 
 ARG OPENTTD_VERSION
 
