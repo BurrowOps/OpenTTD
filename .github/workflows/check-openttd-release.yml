@@ -43,6 +43,10 @@ jobs:
             const openttd = arg('OPENTTD_VERSION').replace(/^v/, '');
             const opengfx = arg('OPENGFX_VERSION');
             const lsio = arg('LSIO_VERSION');
+            const digest = dockerfile.match(
+              /FROM ghcr\.io\/linuxserver\/baseimage-ubuntu:\$\{LSIO_VERSION\}@(sha256:[a-f0-9]{64})/
+            );
+            if (!digest) throw new Error('linuxserver base image digest pin missing in docker/dockerfile');
 
             const tags = await github.paginate(github.rest.repos.listTags, {
               owner: context.repo.owner,
@@ -67,6 +71,7 @@ jobs:
             core.setOutput('openttd', openttd);
             core.setOutput('opengfx', opengfx);
             core.setOutput('lsio', lsio);
+            core.setOutput('lsio_digest', digest[1]);
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
@@ -82,7 +87,7 @@ jobs:
             | --- | --- |
             | OpenTTD | ${{ steps.version.outputs.openttd }} |
             | OpenGFX | ${{ steps.version.outputs.opengfx }} |
-            | linuxserver Ubuntu | ${{ steps.version.outputs.lsio }} |
+            | linuxserver Ubuntu | ${{ steps.version.outputs.lsio }} (`${{ steps.version.outputs.lsio_digest }}`) |
 
   build:
     needs: tag

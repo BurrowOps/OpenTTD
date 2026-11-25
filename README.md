@@ -1,6 +1,8 @@
-# OpenTTD [![Docker Version](https://img.shields.io/docker/v/burrowops/openttd?sort=semver)](https://hub.docker.com/r/burrowops/openttd/) [![Docker Pulls](https://img.shields.io/docker/pulls/burrowops/openttd.svg?maxAge=600)](https://hub.docker.com/r/burrowops/openttd/) [![Docker Stars](https://img.shields.io/docker/stars/burrowops/openttd.svg?maxAge=600)](https://hub.docker.com/r/burrowops/openttd/)
+# OpenTTD
 
-Dedicated [OpenTTD](https://www.openttd.org/) server image. Based on [bateau/openttd](https://hub.docker.com/r/bateau/openttd) and [linuxserver.io](https://www.linuxserver.io/) Ubuntu with s6-overlay.
+[![GitHub](https://img.shields.io/badge/GitHub-BurrowOps%2FOpenTTD-181717?logo=github)](https://github.com/BurrowOps/OpenTTD) [![Docker Version](https://img.shields.io/docker/v/burrowops/openttd?sort=semver)](https://hub.docker.com/r/burrowops/openttd/) [![Docker Pulls](https://img.shields.io/docker/pulls/burrowops/openttd.svg?maxAge=600)](https://hub.docker.com/r/burrowops/openttd/) [![Docker Stars](https://img.shields.io/docker/stars/burrowops/openttd.svg?maxAge=600)](https://hub.docker.com/r/burrowops/openttd/)
+
+Dedicated [OpenTTD](https://www.openttd.org/) server image. Source code: [github.com/BurrowOps/OpenTTD](https://github.com/BurrowOps/OpenTTD). Based on [bateau/openttd](https://hub.docker.com/r/bateau/openttd) and [linuxserver.io](https://www.linuxserver.io/) Ubuntu with s6-overlay.
 
 [![dockeri.co](https://dockeri.co/image/burrowops/openttd)](https://hub.docker.com/r/burrowops/openttd)
 
@@ -159,7 +161,7 @@ services:
       # - 3977:3977/tcp
 ```
 
-A copy of this file lives at [`docker-compose.yml`](docker-compose.yml). From the repo root:
+A copy of this file lives at [`docker-compose.yml`](https://github.com/BurrowOps/OpenTTD/blob/main/docker-compose.yml). From the repo root:
 
 ```bash
 docker compose up -d
@@ -178,4 +180,6 @@ Savegame filenames must not contain spaces.
 
 [Renovate](https://github.com/apps/renovate) watches OpenTTD, OpenGFX, the linuxserver Ubuntu base, and GitHub Actions. Install the Renovate GitHub App on this repo. It opens (and auto-merges) PRs; after a `docker/dockerfile` change lands, CI publishes a new image.
 
-A new OpenTTD release becomes `{version}`. A bump of only OpenGFX or Ubuntu becomes `{version}-1`, then `{version}-2`, and so on.
+linuxserver republishes the `noble` tag without renaming it. That tag is pinned to an image digest in `docker/dockerfile`, so a remote base rebuild shows up here as a digest bump.
+
+A new OpenTTD release becomes `{version}`. A bump of only OpenGFX or the Ubuntu digest becomes `{version}-1`, then `{version}-2`, and so on.
