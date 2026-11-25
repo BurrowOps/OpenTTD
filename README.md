@@ -14,10 +14,10 @@ Current tags are listed on [Docker Hub](https://hub.docker.com/r/burrowops/opent
 | --- | --- |
 | `latest` | Newest published image |
 | `{major}` | Newest image for that OpenTTD major (for example `14`, `15`) |
-| `{version}` | Newest image for that OpenTTD release (for example `15.3`) |
+| `{version}` | First image for that OpenTTD release (for example `15.3`); never overwritten by rebuilds |
 | `{version}-{n}` | Rebuild of the same OpenTTD with newer bases (OpenGFX, Ubuntu, …) |
 
-`{version}` is the first image for that OpenTTD release. Later non-OpenTTD bumps are `{version}-1`, `{version}-2`, and so on. `{version}` and `{major}` keep moving to the newest rebuild.
+`{version}` is the first image for that OpenTTD release. Later non-OpenTTD bumps are `{version}-1`, `{version}-2`, and so on. Published `{version}` and `{version}-{n}` tags never change. `latest` and `{major}` move to the newest rebuild.
 
 ## File locations
 
