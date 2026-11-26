@@ -15,6 +15,10 @@ services:
       # - configfile=openttd.cfg
       # - debug=0
       # - UMASK=022
+      # Any OpenTTD setting: OPENTTD_{CFG,PRIVATE,SECRETS}__<section>__<key>
+      # - OPENTTD_PRIVATE__network__server_name=My server
+      # - OPENTTD_CFG__network__server_game_type=public
+      # - OPENTTD_SECRETS__network__rcon_password=change-me
     volumes:
       - ./openttd:/config
     ports:
