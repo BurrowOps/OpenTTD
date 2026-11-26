@@ -11,6 +11,43 @@ params="${params} -c ${configpath}/${configfile}"
 
 mkdir -p "${savepath}/autosave"
 
+# Set "key = value" in [section] of an OpenTTD ini file, creating file/section/key as needed
+set_ini() {
+  local file="$1" tmp
+  [ -f "${file}" ] || : > "${file}"
+  tmp="$(mktemp)"
+  S="$2" K="$3" V="$4" awk '
+    function out() { print ENVIRON["K"] " = " ENVIRON["V"]; done = 1 }
+    /^\[/ { if (insec && !done) out(); insec = ($0 == "[" ENVIRON["S"] "]"); print; next }
+    insec && !done { k = $0; sub(/[ \t]*=.*/, "", k); if (k == ENVIRON["K"]) { out(); next } }
+    { print }
+    END { if (!done) { if (!insec) printf "\n[%s]\n", ENVIRON["S"]; out() } }
+  ' "${file}" > "${tmp}" && cat "${tmp}" > "${file}"
+  rm -f "${tmp}"
+}
+
+# Config overrides: OPENTTD_CFG__<section>__<key>, OPENTTD_PRIVATE__..., OPENTTD_SECRETS__...
+# Applied on every start, so they win over values in the files.
+# Read names from s6 env dir: names with '.' or '-' are not bash variables.
+mkdir -p "${configpath}"
+for envfile in /var/run/s6/container_environment/OPENTTD_{CFG,PRIVATE,SECRETS}__*; do
+  [ -f "${envfile}" ] || continue
+  name="${envfile##*/}"
+  case "${name}" in
+    OPENTTD_CFG__*)     target="${configpath}/${configfile}"; rest="${name#OPENTTD_CFG__}" ;;
+    OPENTTD_PRIVATE__*) target="${configpath}/private.cfg";   rest="${name#OPENTTD_PRIVATE__}" ;;
+    OPENTTD_SECRETS__*) target="${configpath}/secrets.cfg";   rest="${name#OPENTTD_SECRETS__}" ;;
+  esac
+  section="${rest%%__*}"
+  key="${rest#*__}"
+  if [ "${section}" = "${rest}" ] || [ -z "${section}" ] || [ -z "${key}" ]; then
+    echo "ignoring ${name}: expected ${name%%__*}__<section>__<key>"
+    continue
+  fi
+  echo "config override: ${target##*/} [${section}] ${key}"
+  set_ini "${target}" "${section}" "${key}" "$(cat "${envfile}")"
+done
+
 # OpenTTD writes saves under $HOME/.openttd/save; keep that pointed at savepath
 mkdir -p "${HOME}/.openttd"
 if [ ! -e "${HOME}/.openttd/save" ]; then

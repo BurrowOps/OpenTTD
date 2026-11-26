@@ -29,7 +29,7 @@ Mount a host path at **`/config`**. That volume holds everything that should sur
 | `/config/save/` | Savegames |
 | `/config/save/autosave/` | Autosaves (used by `loadgame=last-autosave`) |
 
-Edit `openttd.cfg` after the first start to set the server name, password, public listing, and so on.
+Edit `openttd.cfg` after the first start to set the server name, password, public listing, and so on, or set them with [config variables](#openttd-config-settings).
 
 ## Environment variables
 
@@ -53,6 +53,33 @@ Defaults are baked into the image. Override with `-e` / Compose `environment`.
 | `false` | Start a new game |
 | `true` | Load `${savepath}/${savename}` (requires `savename`) |
 | `last-autosave` | Load the newest file in `${savepath}/autosave/` (default; falls back to a new game if none exist) |
+
+### OpenTTD config settings
+
+Any setting in OpenTTD's config files can be set from the environment, without the image knowing about it. The name says which file, section and key to set:
+
+| Variable pattern | File |
+| --- | --- |
+| `OPENTTD_CFG__<section>__<key>` | `${configpath}/${configfile}` (`openttd.cfg`) |
+| `OPENTTD_PRIVATE__<section>__<key>` | `${configpath}/private.cfg` |
+| `OPENTTD_SECRETS__<section>__<key>` | `${configpath}/secrets.cfg` |
+
+`<section>` and `<key>` are written exactly as in the file (case-sensitive). The value is written as-is.
+
+These are applied on every start, before OpenTTD launches, so they overwrite whatever is in the file. Settings not set this way keep their value from the file. Removing a variable does not undo it: the last value stays in the file.
+
+OpenTTD keeps some settings outside `openttd.cfg` and ignores them there. Use the matching prefix:
+
+| Setting | Variable |
+| --- | --- |
+| Server name | `OPENTTD_PRIVATE__network__server_name=My server` |
+| Public listing | `OPENTTD_CFG__network__server_game_type=public` |
+| Server password | `OPENTTD_SECRETS__network__server_password=secret` |
+| Rcon password | `OPENTTD_SECRETS__network__rcon_password=secret` |
+| Admin port password | `OPENTTD_SECRETS__network__admin_password=secret` |
+| Map size | `OPENTTD_CFG__game_creation__map_x=9` (2^9 = 512) |
+
+Check an existing `openttd.cfg`, `private.cfg` or `secrets.cfg` for other section and key names.
 
 ### linuxserver / permissions
 
@@ -152,6 +179,10 @@ services:
       # - configfile=openttd.cfg
       # - debug=0
       # - UMASK=022
+      # Any OpenTTD setting: OPENTTD_{CFG,PRIVATE,SECRETS}__<section>__<key>
+      # - OPENTTD_PRIVATE__network__server_name=My server
+      # - OPENTTD_CFG__network__server_game_type=public
+      # - OPENTTD_SECRETS__network__rcon_password=change-me
     volumes:
       - ./openttd:/config
     ports:
